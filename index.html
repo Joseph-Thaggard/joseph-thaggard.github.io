@@ -23,9 +23,7 @@
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     html { scroll-behavior: smooth; }
-
     body {
       background: var(--bg);
       color: var(--text);
@@ -34,7 +32,6 @@
       overflow-x: hidden;
     }
 
-    /* ── STARFIELD ── */
     #starfield {
       position: fixed; inset: 0; pointer-events: none; z-index: 0;
       background:
@@ -44,12 +41,10 @@
     }
     #starfield canvas { position: absolute; inset: 0; }
 
-    /* ── GLOBAL LAYOUT ── */
     main { position: relative; z-index: 1; }
     section { padding: 100px 0; }
     .container { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
 
-    /* ── SCAN LINE OVERLAY ── */
     body::after {
       content: '';
       position: fixed; inset: 0; pointer-events: none; z-index: 9999;
@@ -62,7 +57,6 @@
       );
     }
 
-    /* ── NAV ── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       padding: 20px 40px;
@@ -70,10 +64,7 @@
       background: linear-gradient(to bottom, rgba(4,8,16,0.95), transparent);
       backdrop-filter: blur(4px);
     }
-    .nav-logo {
-      font-family: var(--mono); font-size: 13px; color: var(--cyan);
-      letter-spacing: 0.1em;
-    }
+    .nav-logo { font-family: var(--mono); font-size: 13px; color: var(--cyan); letter-spacing: 0.1em; }
     .nav-logo span { color: var(--muted); }
     .nav-links { display: flex; gap: 32px; }
     .nav-links a {
@@ -83,7 +74,6 @@
     }
     .nav-links a:hover { color: var(--cyan); }
 
-    /* ── HERO ── */
     #hero {
       min-height: 100vh;
       display: flex; align-items: center;
@@ -126,16 +116,11 @@
       padding: 12px 28px; border-radius: 2px; cursor: pointer;
       text-decoration: none; transition: all 0.2s; display: inline-block;
     }
-    .btn-primary {
-      background: var(--cyan); color: var(--bg); border: 1px solid var(--cyan);
-    }
+    .btn-primary { background: var(--cyan); color: var(--bg); border: 1px solid var(--cyan); }
     .btn-primary:hover { background: transparent; color: var(--cyan); }
-    .btn-outline {
-      background: transparent; color: var(--text); border: 1px solid var(--muted);
-    }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--muted); }
     .btn-outline:hover { border-color: var(--cyan); color: var(--cyan); }
 
-    /* HERO RIGHT — photo panel */
     .hero-panel {
       position: relative;
       border: 1px solid rgba(0,217,255,0.15);
@@ -155,7 +140,6 @@
       display: block;
     }
 
-    /* ── SECTION HEADERS ── */
     .section-tag {
       font-family: var(--mono); font-size: 11px;
       color: var(--cyan); letter-spacing: 0.2em;
@@ -170,7 +154,6 @@
     }
     h2 em { font-style: normal; color: var(--cyan); }
 
-    /* ── PROJECTS ── */
     #projects { background: var(--bg2); }
     .projects-grid {
       display: grid;
@@ -204,10 +187,7 @@
       font-family: var(--display); font-weight: 700; font-size: 22px;
       color: #fff; margin-bottom: 12px; line-height: 1.2;
     }
-    .card-desc {
-      font-size: 14px; line-height: 1.7; color: var(--text);
-      margin-bottom: 20px;
-    }
+    .card-desc { font-size: 14px; line-height: 1.7; color: var(--text); margin-bottom: 20px; }
     .card-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip {
       font-family: var(--mono); font-size: 10px;
@@ -226,7 +206,6 @@
     }
     .card-link:hover { border-color: currentColor; }
 
-    /* ── PUBLICATIONS ── */
     .pub-list { display: flex; flex-direction: column; gap: 24px; }
     .pub-item {
       display: grid;
@@ -234,19 +213,9 @@
       gap: 0 28px;
       padding: 28px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
     }
-    .pub-year {
-      font-family: var(--mono); font-size: 13px;
-      color: var(--amber); letter-spacing: 0.05em;
-      padding-top: 3px;
-    }
-    .pub-title {
-      font-family: var(--display); font-weight: 600;
-      font-size: 18px; color: #fff; margin-bottom: 6px; line-height: 1.3;
-    }
-    .pub-venue {
-      font-family: var(--mono); font-size: 11px;
-      color: var(--muted); letter-spacing: 0.08em;
-    }
+    .pub-year { font-family: var(--mono); font-size: 13px; color: var(--amber); letter-spacing: 0.05em; padding-top: 3px; }
+    .pub-title { font-family: var(--display); font-weight: 600; font-size: 18px; color: #fff; margin-bottom: 6px; line-height: 1.3; }
+    .pub-venue { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
     .pub-badge {
       display: inline-block; margin-left: 12px;
       font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase;
@@ -256,14 +225,8 @@
     }
     .pub-badge.submitted { background: rgba(255,170,0,0.1); color: var(--amber); border-color: rgba(255,170,0,0.3); }
 
-    /* ── SKILLS ── */
     #skills { background: var(--bg2); }
-    .skills-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 32px;
-    }
-    .skill-group { }
+    .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 32px; }
     .skill-group-label {
       font-family: var(--mono); font-size: 11px;
       color: var(--amber); letter-spacing: 0.15em;
@@ -279,13 +242,9 @@
     .skill-bar { width: 80px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; }
     .skill-fill { height: 100%; border-radius: 2px; background: var(--cyan); }
 
-    /* ── ABOUT ── */
-    .about-grid {
-      display: grid; grid-template-columns: 3fr 2fr; gap: 80px; align-items: start;
-    }
+    .about-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 80px; align-items: start; }
     .about-text p { font-size: 15px; line-height: 1.85; color: var(--text); margin-bottom: 20px; }
     .about-text p strong { color: #fff; font-weight: 500; }
-    .about-timeline { }
     .timeline-item {
       display: grid; grid-template-columns: 12px 1fr; gap: 16px;
       margin-bottom: 28px; position: relative;
@@ -305,10 +264,7 @@
     .tl-role { font-family: var(--display); font-weight: 600; font-size: 15px; color: #fff; }
     .tl-org { font-size: 13px; color: var(--amber); }
 
-    /* ── CONTACT ── */
-    .contact-inner {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
-    }
+    .contact-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
     .contact-text h2 { margin-bottom: 20px; }
     .contact-text p { font-size: 15px; line-height: 1.75; color: var(--text); margin-bottom: 32px; }
     .contact-links { display: flex; flex-direction: column; gap: 16px; }
@@ -324,26 +280,18 @@
     .contact-link-icon { font-family: var(--mono); font-size: 18px; color: var(--cyan); width: 28px; }
     .contact-link-label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; }
 
-    /* ── FOOTER ── */
     footer {
       padding: 40px; text-align: center;
       border-top: 1px solid rgba(255,255,255,0.06);
     }
     footer p { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; }
 
-    /* ── GLOW LINE DIVIDERS ── */
     .glow-divider {
       height: 1px; margin: 0;
       background: linear-gradient(to right, transparent, rgba(0,217,255,0.3), transparent);
     }
 
-    /* ── SEPC LOGO IN CARD ── */
-    .sepc-logo {
-      width: 160px; margin-bottom: 16px;
-      mix-blend-mode: screen;
-      opacity: 0.95;
-    }
-    /* ── AIAA BADGE ── */
+    .sepc-logo { width: 160px; margin-bottom: 16px; mix-blend-mode: screen; opacity: 0.95; }
     .role-badge {
       display: inline-block; margin-bottom: 6px;
       font-family: var(--mono); font-size: 10px;
@@ -353,26 +301,18 @@
       color: var(--amber); letter-spacing: 0.1em;
     }
 
-    /* ── ANIMATIONS ── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(24px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .hero-left > * {
-      opacity: 0;
-      animation: fadeUp 0.7s ease forwards;
-    }
+    .hero-left > * { opacity: 0; animation: fadeUp 0.7s ease forwards; }
     .hero-left > *:nth-child(1) { animation-delay: 0.1s; }
     .hero-left > *:nth-child(2) { animation-delay: 0.25s; }
     .hero-left > *:nth-child(3) { animation-delay: 0.35s; }
     .hero-left > *:nth-child(4) { animation-delay: 0.45s; }
     .hero-left > *:nth-child(5) { animation-delay: 0.55s; }
-    .hero-panel {
-      opacity: 0;
-      animation: fadeUp 0.8s ease 0.6s forwards;
-    }
+    .hero-panel { opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards; }
 
-    /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
       .hero-grid, .about-grid, .contact-inner { grid-template-columns: 1fr; }
       .hero-panel { display: none; }
@@ -385,10 +325,8 @@
 </head>
 <body>
 
-<!-- Starfield -->
 <div id="starfield"><canvas id="stars"></canvas></div>
 
-<!-- Nav -->
 <nav>
   <div class="nav-logo"><span>// </span>JCT</div>
   <div class="nav-links">
@@ -401,7 +339,6 @@
 </nav>
 
 <main>
-  <!-- ── HERO ── -->
   <section id="hero">
     <div class="container">
       <div class="hero-grid">
@@ -410,11 +347,11 @@
           <h1>JOSEPH<br><span class="accent">THAGGARD</span></h1>
           <div class="hero-subtitle">Plasma · Propulsion · Simulation</div>
           <p class="hero-bio">
-            Aerospace engineering student at UAH specializing in plasma physics, 
-            electric propulsion, and high-fidelity PIC simulation. 
-            Three years of hands-on laboratory experience building fusion reactors, 
+            Aerospace engineering student at UAH specializing in plasma physics,
+            electric propulsion, and high-fidelity PIC simulation.
+            Three years of hands-on laboratory experience building fusion reactors,
             Hall-effect thrusters, and the software that drives them.
-            Co-founder of the <strong style="color:#fff">Student Electric Propulsion Consortium</strong> — 
+            Co-founder of the <strong style="color:#fff">Student Electric Propulsion Consortium</strong> —
             a worldwide network spanning 19 universities.
           </p>
           <div class="hero-cta">
@@ -424,10 +361,7 @@
         </div>
 
         <div class="hero-panel">
-          <img
-            src="HEADSHOT_PLACEHOLDER"
-            alt="Joseph Thaggard"
-          />
+          <img src="HEADSHOT_DATA_HERE" alt="Joseph Thaggard" />
         </div>
       </div>
     </div>
@@ -435,7 +369,6 @@
 
   <div class="glow-divider"></div>
 
-  <!-- ── ABOUT ── -->
   <section id="about">
     <div class="container">
       <div class="section-tag">Background</div>
@@ -443,25 +376,25 @@
       <div class="about-grid">
         <div class="about-text">
           <p>
-            I'm a <strong>Junior Aerospace Engineering student at UAH</strong>, 
-            embedded in the Charger Advanced Power and Propulsion (CAPP) Lab since January 2023. 
-            My work sits at the intersection of plasma physics, electric propulsion, and the 
+            I'm a <strong>Junior Aerospace Engineering student at UAH</strong>,
+            embedded in the Charger Advanced Power and Propulsion (CAPP) Lab since January 2023.
+            My work sits at the intersection of plasma physics, electric propulsion, and the
             numerical simulations that make advanced concepts tractable.
           </p>
           <p>
-            I built a <strong>Farnsworth-type electrostatic fusion reactor from scratch</strong> — 
-            chamber, vacuum system, high-voltage integration, DAQ software, and all. 
-            I've qualified as an operator on the CAPP Lab's 60 kJ "Sparky" pulse power machine, 
-            and I lead simulation efforts on the OUROBOROS magnetically shielded Hall thruster project, 
-            including a second-author AIAA SciTech 2026 paper. I also conduct contracted PIC 
-            simulation research on <strong>magnetic mirror fusion confinement</strong> using WarpX, 
+            I built a <strong>Farnsworth-type electrostatic fusion reactor from scratch</strong> —
+            chamber, vacuum system, high-voltage integration, DAQ software, and all.
+            I've qualified as an operator on the CAPP Lab's 60 kJ "Sparky" pulse power machine,
+            and I lead simulation efforts on the OUROBOROS magnetically shielded Hall thruster project,
+            including a second-author AIAA SciTech 2026 paper. I also conduct contracted PIC
+            simulation research on <strong>magnetic mirror fusion confinement</strong> using WarpX,
             modeling DT plasma behavior across Gas Dynamic Trap reactor geometries.
           </p>
           <p>
-            Beyond the lab, I co-founded the <strong>Student Electric Propulsion Consortium (SEPC)</strong> 
-            in September 2025 — a worldwide student network now spanning 19+ universities — to provide student EP teams 
-            with resources to assist in concept development, connecting them to experts in industry and academia. 
-            I also serve as <strong>Chapter Chair of UAH's AIAA branch</strong> and sit on the <strong>AIAA Nuclear &amp; Future Flight Propulsion Technical Committee</strong>. 
+            Beyond the lab, I co-founded the <strong>Student Electric Propulsion Consortium (SEPC)</strong>
+            in September 2025 — a worldwide student network now spanning 19+ universities — to provide student EP teams
+            with resources to assist in concept development, connecting them to experts in industry and academia.
+            I also serve as <strong>Chapter Chair of UAH's AIAA branch</strong> and sit on the <strong>AIAA Nuclear &amp; Future Flight Propulsion Technical Committee</strong>.
           </p>
         </div>
         <div class="about-timeline">
@@ -536,7 +469,6 @@
 
   <div class="glow-divider"></div>
 
-  <!-- ── PROJECTS ── -->
   <section id="projects">
     <div class="container">
       <div class="section-tag">Engineering Work</div>
@@ -547,9 +479,9 @@
           <div class="card-tag">Electric Propulsion · Simulation</div>
           <div class="card-title">OUROBOROS Hall Thruster</div>
           <div class="card-desc">
-            Simulation and design lead for a 1.35 kW magnetically shielded Hall-effect thruster. 
-            Developed automated pyFEMM magnetic circuit models, 
-            benchmarked against SPT-100 using HallThruster.jl, 
+            Simulation and design lead for a 1.35 kW magnetically shielded Hall-effect thruster.
+            Developed automated pyFEMM magnetic circuit models,
+            benchmarked against SPT-100 using HallThruster.jl,
             and initiated 2D axial-azimuthal WarpX PIC discharge channel modeling.
             Second-author at AIAA SciTech 2026.
           </div>
@@ -567,9 +499,9 @@
           <div class="card-tag">Fusion · Plasma Physics</div>
           <div class="card-title">Farnsworth Electrostatic Fusion Reactor</div>
           <div class="card-desc">
-            Designed, constructed, and operated a complete Farnsworth-type inertial electrostatic 
-            confinement reactor — including high-vacuum system (&lt;0.32 mTorr), high-voltage 
-            integration, scintillation diagnostics, and full computer-controlled data acquisition 
+            Designed, constructed, and operated a complete Farnsworth-type inertial electrostatic
+            confinement reactor — including high-vacuum system (&lt;0.32 mTorr), high-voltage
+            integration, scintillation diagnostics, and full computer-controlled data acquisition
             using custom Arduino-based hardware and software.
           </div>
           <div class="card-chips">
@@ -584,9 +516,9 @@
           <div class="card-tag">Software · Automation</div>
           <div class="card-title">FusorOS</div>
           <div class="card-desc">
-            A comprehensive plasma control software suite for autonomous reactor operation. 
-            Features a visual block-diagram programming interface (FusorProgram), 
-            an execution engine for generated command sequences (FusorAutoRun), 
+            A comprehensive plasma control software suite for autonomous reactor operation.
+            Features a visual block-diagram programming interface (FusorProgram),
+            an execution engine for generated command sequences (FusorAutoRun),
             real-time data visualization, and hardware-free test mode.
           </div>
           <div class="card-chips">
@@ -602,9 +534,9 @@
           <div class="card-tag">Fusion · Computational Physics</div>
           <div class="card-title">Magnetic Mirror Fusion Modeling</div>
           <div class="card-desc">
-            Contracted PIC simulation research modeling DT plasma confinement in ELMO Bumpy Torus 
-            and Gas Dynamic Trap (GDT) geometries using WarpX. Developed a spline-axis approach for simulating curved 
-            multi-mirror reactor configurations, increasing simulation simplicity. Implements Pairwise Coulomb, DSMC, fusion,  
+            Contracted PIC simulation research modeling DT plasma confinement in ELMO Bumpy Torus
+            and Gas Dynamic Trap (GDT) geometries using WarpX. Developed a spline-axis approach for simulating curved
+            multi-mirror reactor configurations, increasing simulation simplicity. Implements Pairwise Coulomb, DSMC, fusion,
             and bremsstrahlung collision physics with deuterium-tritium plasma species.
           </div>
           <div class="card-chips">
@@ -621,11 +553,11 @@
           <div class="card-tag">Leadership · Community Building</div>
           <div class="card-title">Student Electric Propulsion Consortium (SEPC)</div>
           <div class="card-desc">
-            Co-founded in September 2025 with students from UAH, Arizona State University, 
-            and the University of Southampton. Now a worldwide network with members from 
-            19+ universities — Purdue, Michigan, Cranfield, Cal Poly Pomona, Mumbai, Temple, and more — 
-            serving as a central resource hub for student EP teams. 
-            Hosts monthly talks from industry and academic experts including 
+            Co-founded in September 2025 with students from UAH, Arizona State University,
+            and the University of Southampton. Now a worldwide network with members from
+            19+ universities — Purdue, Michigan, Cranfield, Cal Poly Pomona, Mumbai, Temple, and more —
+            serving as a central resource hub for student EP teams.
+            Hosts monthly talks from industry and academic experts including
             Dr. Dan Goebel (NAE), Steve Snyder, and others.
           </div>
           <div class="card-chips">
@@ -641,9 +573,9 @@
           <div class="card-tag">Nuclear Propulsion · Leadership</div>
           <div class="card-title">Project NIGHT</div>
           <div class="card-desc">
-            Leading a ~12-person team designing a nuclear-enabled Hall-effect thruster 
-            attitude control system. First-author on an AIAA Region 2 conference paper. 
-            Team is developing WarpX simulations and theoretical models for effects of 
+            Leading a ~12-person team designing a nuclear-enabled Hall-effect thruster
+            attitude control system. First-author on an AIAA Region 2 conference paper.
+            Team is developing WarpX simulations and theoretical models for effects of
             radiation on Hall-effect thruster plasmas, benchmarking against SPT-100 cases.
           </div>
           <div class="card-chips">
@@ -660,7 +592,6 @@
 
   <div class="glow-divider"></div>
 
-  <!-- ── PUBLICATIONS ── -->
   <section id="publications">
     <div class="container">
       <div class="section-tag">Research Output</div>
@@ -692,7 +623,6 @@
 
   <div class="glow-divider"></div>
 
-  <!-- ── SKILLS ── -->
   <section id="skills">
     <div class="container">
       <div class="section-tag">Technical Capabilities</div>
@@ -732,7 +662,6 @@
 
   <div class="glow-divider"></div>
 
-  <!-- ── CONTACT ── -->
   <section id="contact">
     <div class="container">
       <div class="contact-inner">
@@ -740,9 +669,9 @@
           <div class="section-tag">Get In Touch</div>
           <h2>Let's <em>Connect</em></h2>
           <p>
-            I'm actively seeking internships and research opportunities in 
-            fusion energy, electric propulsion, and advanced aerospace systems. 
-            If you're working on something that pushes the boundary of what's possible, 
+            I'm actively seeking internships and research opportunities in
+            fusion energy, electric propulsion, and advanced aerospace systems.
+            If you're working on something that pushes the boundary of what's possible,
             I'd love to hear about it.
           </p>
           <a href="mailto:jct0031@uah.edu" class="btn btn-primary">Send Email</a>
@@ -775,61 +704,39 @@
 </footer>
 
 <script>
-  // Starfield canvas
   const canvas = document.getElementById('stars');
   const ctx = canvas.getContext('2d');
   let stars = [];
-
-  function resize() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
   resize();
   window.addEventListener('resize', resize);
-
   function initStars(n) {
     stars = [];
     for (let i = 0; i < n; i++) {
-      stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 1.2,
-        a: Math.random(),
-        speed: 0.002 + Math.random() * 0.004
-      });
+      stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.2, a: Math.random(), speed: 0.002+Math.random()*0.004 });
     }
   }
   initStars(200);
-
   function drawStars() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
     for (const s of stars) {
       s.a += s.speed;
       const opacity = 0.2 + 0.5 * Math.abs(Math.sin(s.a));
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(180, 210, 255, ${opacity})`;
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(180,210,255,${opacity})`; ctx.fill();
     }
     requestAnimationFrame(drawStars);
   }
   drawStars();
 
-  // Scroll reveal
   const observer = new IntersectionObserver(entries => {
     entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.style.opacity = '1';
-        e.target.style.transform = 'translateY(0)';
-      }
+      if (e.isIntersecting) { e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; }
     });
   }, { threshold: 0.1 });
-
-  document.querySelectorAll('.project-card, .pub-item, .skill-group').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    observer.observe(el);
+  document.querySelectorAll('.project-card,.pub-item,.skill-group').forEach(el => {
+    el.style.opacity='0'; el.style.transform='translateY(20px)';
+    el.style.transition='opacity 0.6s ease, transform 0.6s ease'; observer.observe(el);
   });
 </script>
 </body>
