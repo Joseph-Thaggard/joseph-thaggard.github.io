@@ -124,7 +124,7 @@
     .hero-panel {
       position: relative;
       border: 1px solid rgba(0,217,255,0.15);
-      background: rgba(0,217,255,0.02);
+      background: #020609;
       min-height: 480px;
       overflow: hidden;
     }
@@ -132,12 +132,23 @@
       content: '';
       position: absolute; top: -1px; left: 20px; right: 20px; height: 2px;
       background: linear-gradient(to right, transparent, var(--cyan), transparent);
-      z-index: 1;
+      z-index: 2;
     }
-    .hero-panel img {
+    .hero-panel::after {
+      content: '';
+      position: absolute; inset: 0; z-index: 2; pointer-events: none;
+      background: linear-gradient(to bottom, transparent 70%, #020609 100%);
+    }
+    #plasma-canvas {
+      position: absolute; inset: 0;
       width: 100%; height: 100%;
-      object-fit: cover; object-position: center top;
       display: block;
+    }
+    .plasma-label {
+      position: absolute; bottom: 16px; left: 0; right: 0;
+      text-align: center; z-index: 3;
+      font-family: var(--mono); font-size: 10px;
+      color: rgba(0,217,255,0.5); letter-spacing: 0.15em;
     }
 
     .section-tag {
@@ -291,16 +302,6 @@
       background: linear-gradient(to right, transparent, rgba(0,217,255,0.3), transparent);
     }
 
-    .sepc-logo { width: 160px; margin-bottom: 16px; mix-blend-mode: screen; opacity: 0.95; }
-    .role-badge {
-      display: inline-block; margin-bottom: 6px;
-      font-family: var(--mono); font-size: 10px;
-      padding: 3px 10px; border-radius: 2px;
-      background: rgba(255,170,0,0.08);
-      border: 1px solid rgba(255,170,0,0.25);
-      color: var(--amber); letter-spacing: 0.1em;
-    }
-
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(24px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -361,7 +362,8 @@
         </div>
 
         <div class="hero-panel">
-          <img src="HEADSHOT_DATA_HERE" alt="Joseph Thaggard" />
+          <canvas id="plasma-canvas"></canvas>
+          <div class="plasma-label">PIC PLASMA SIMULATION — HALL DISCHARGE CHANNEL</div>
         </div>
       </div>
     </div>
@@ -704,31 +706,290 @@
 </footer>
 
 <script>
-  const canvas = document.getElementById('stars');
-  const ctx = canvas.getContext('2d');
+  /* ── Starfield ── */
+  const starsCanvas = document.getElementById('stars');
+  const starsCtx = starsCanvas.getContext('2d');
   let stars = [];
-  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-  resize();
-  window.addEventListener('resize', resize);
+  function resizeStars() { starsCanvas.width = window.innerWidth; starsCanvas.height = window.innerHeight; }
+  resizeStars();
+  window.addEventListener('resize', resizeStars);
   function initStars(n) {
     stars = [];
-    for (let i = 0; i < n; i++) {
-      stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.2, a: Math.random(), speed: 0.002+Math.random()*0.004 });
-    }
+    for (let i = 0; i < n; i++)
+      stars.push({ x: Math.random()*starsCanvas.width, y: Math.random()*starsCanvas.height, r: Math.random()*1.2, a: Math.random(), speed: 0.002+Math.random()*0.004 });
   }
   initStars(200);
   function drawStars() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    starsCtx.clearRect(0,0,starsCanvas.width,starsCanvas.height);
     for (const s of stars) {
       s.a += s.speed;
       const opacity = 0.2 + 0.5 * Math.abs(Math.sin(s.a));
-      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-      ctx.fillStyle = `rgba(180,210,255,${opacity})`; ctx.fill();
+      starsCtx.beginPath(); starsCtx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      starsCtx.fillStyle = `rgba(180,210,255,${opacity})`; starsCtx.fill();
     }
     requestAnimationFrame(drawStars);
   }
   drawStars();
 
+  /* ── Plasma PIC Simulation ── */
+  (function() {
+    const canvas = document.getElementById('plasma-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+      canvas.width  = canvas.offsetWidth  || 480;
+      canvas.height = canvas.offsetHeight || 480;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    /* Simulation parameters — Hall thruster discharge channel (axial × azimuthal) */
+    const N_IONS     = 320;
+    const N_ELECTRONS= 480;
+    const N_NEUTRAL  = 80;
+
+    /* Particle: [x, y, vx, vy, age] */
+    function mkIon() {
+      return {
+        x: Math.random() * 0.35,          /* spawn near anode (left) */
+        y: Math.random(),
+        vx: 0.001 + Math.random()*0.003,  /* accelerating toward cathode */
+        vy: (Math.random()-0.5)*0.003,
+        age: 0,
+        life: 180 + Math.random()*180
+      };
+    }
+    function mkElectron() {
+      return {
+        x: Math.random(),
+        y: Math.random(),
+        vx: (Math.random()-0.5)*0.012,
+        vy: (Math.random()-0.5)*0.012,
+        age: 0,
+        life: 60 + Math.random()*120
+      };
+    }
+    function mkNeutral() {
+      return {
+        x: 0,
+        y: Math.random(),
+        vx: 0.002 + Math.random()*0.002,
+        vy: (Math.random()-0.5)*0.001,
+        age: 0,
+        life: 300 + Math.random()*300
+      };
+    }
+
+    const ions      = Array.from({length: N_IONS},      mkIon);
+    const electrons = Array.from({length: N_ELECTRONS}, mkElectron);
+    const neutrals  = Array.from({length: N_NEUTRAL},   mkNeutral);
+
+    /* Magnetic field lines — axial Hall thruster topology */
+    function drawMagneticField(W, H) {
+      ctx.save();
+      ctx.globalAlpha = 0.07;
+      /* Curved field lines bowing outward near the exit plane (x ~ 0.6–0.8) */
+      for (let i = 0; i <= 8; i++) {
+        const yFrac = i / 8;
+        ctx.beginPath();
+        ctx.moveTo(0, yFrac * H);
+        /* slight bow around magnetic circuit peak */
+        ctx.bezierCurveTo(
+          W * 0.5, yFrac * H + (0.5 - yFrac) * H * 0.15,
+          W * 0.7, yFrac * H + (0.5 - yFrac) * H * 0.22,
+          W,       yFrac * H
+        );
+        ctx.strokeStyle = '#00d9ff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /* Density heatmap — pre-allocated ImageData */
+    function drawDensity(W, H) {
+      const imgData = ctx.createImageData(W, H);
+      const d = imgData.data;
+      /* accumulate ion density */
+      for (const p of ions) {
+        const px = Math.round(p.x * (W-1));
+        const py = Math.round(p.y * (H-1));
+        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+          const nx = px+dx, ny = py+dy;
+          if (nx<0||nx>=W||ny<0||ny>=H) continue;
+          const idx = (ny*W+nx)*4;
+          const r2 = dx*dx+dy*dy;
+          const w = Math.exp(-r2/5);
+          d[idx]   = Math.min(255, d[idx]   + w*18);
+          d[idx+1] = Math.min(255, d[idx+1] + w*6);
+          d[idx+2] = Math.min(255, d[idx+2] + w*90);
+          d[idx+3] = Math.min(255, d[idx+3] + w*60);
+        }
+      }
+      /* electron density — cyan glow */
+      for (const p of electrons) {
+        const px = Math.round(p.x * (W-1));
+        const py = Math.round(p.y * (H-1));
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+          const nx = px+dx, ny = py+dy;
+          if (nx<0||nx>=W||ny<0||ny>=H) continue;
+          const idx = (ny*W+nx)*4;
+          const r2 = dx*dx+dy*dy;
+          const w = Math.exp(-r2/3);
+          d[idx]   = Math.min(255, d[idx]   + w*4);
+          d[idx+1] = Math.min(255, d[idx+1] + w*35);
+          d[idx+2] = Math.min(255, d[idx+2] + w*60);
+          d[idx+3] = Math.min(255, d[idx+3] + w*40);
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    /* ExB drift ring — electrons spiral around B field */
+    let driftAngle = 0;
+
+    function drawExBRing(W, H) {
+      const cx = W * 0.62, cy = H * 0.5;
+      const rx = W * 0.14, ry = H * 0.28;
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.strokeStyle = '#00d9ff';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 6]);
+      ctx.lineDashOffset = -driftAngle * 8;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    let t = 0;
+
+    function step() {
+      const W = canvas.width, H = canvas.height;
+      t++;
+      driftAngle += 0.015;
+
+      /* Background */
+      ctx.fillStyle = '#020609';
+      ctx.fillRect(0, 0, W, H);
+
+      /* Channel walls — inner/outer boundaries */
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      ctx.fillStyle = '#1a3050';
+      ctx.fillRect(0, 0, W * 0.95, H * 0.06);
+      ctx.fillRect(0, H * 0.94, W * 0.95, H * 0.06);
+      ctx.restore();
+
+      /* Density heatmap */
+      drawDensity(W, H);
+
+      /* B-field lines */
+      drawMagneticField(W, H);
+
+      /* ExB drift ring */
+      drawExBRing(W, H);
+
+      /* Update and draw particles */
+      for (let i = 0; i < ions.length; i++) {
+        const p = ions[i];
+        p.age++;
+        /* accelerate through potential — peaks near exit plane */
+        const xFrac = p.x;
+        const accel = xFrac < 0.7 ? 0.00015 : -0.00005;
+        p.vx += accel;
+        /* weak magnetic deflection (E×B) */
+        p.vy += (Math.random()-0.5)*0.0008;
+        p.x  += p.vx;
+        p.y  += p.vy;
+        /* wrap y, reset x past exit */
+        if (p.y < 0.03) p.vy =  Math.abs(p.vy);
+        if (p.y > 0.97) p.vy = -Math.abs(p.vy);
+        if (p.x > 1.05 || p.age > p.life) { Object.assign(p, mkIon()); }
+
+        /* draw ion */
+        const px = p.x * W, py = p.y * H;
+        const speed = Math.sqrt(p.vx*p.vx+p.vy*p.vy);
+        const alpha = Math.min(0.85, 0.3 + speed * 80);
+        ctx.beginPath();
+        ctx.arc(px, py, 1.2, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(100,160,255,${alpha})`;
+        ctx.fill();
+      }
+
+      for (let i = 0; i < electrons.length; i++) {
+        const p = electrons[i];
+        p.age++;
+        /* electrons gyrate around B lines — strong azimuthal drift */
+        const B = 0.7 + 0.6 * Math.exp(-((p.x - 0.62)**2) / 0.04); /* B peaks at exit plane */
+        const omegaC = 0.018 * B;
+        const vx0 = p.vx, vy0 = p.vy;
+        p.vx =  vx0 * Math.cos(omegaC) + vy0 * Math.sin(omegaC);
+        p.vy = -vx0 * Math.sin(omegaC) + vy0 * Math.cos(omegaC);
+        /* slow axial diffusion */
+        p.vx += (Math.random()-0.5)*0.0006;
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.vx =  Math.abs(p.vx);
+        if (p.x > 1) p.vx = -Math.abs(p.vx);
+        if (p.y < 0) p.vy =  Math.abs(p.vy);
+        if (p.y > 1) p.vy = -Math.abs(p.vy);
+        if (p.age > p.life) { Object.assign(p, mkElectron()); }
+
+        const px = p.x * W, py = p.y * H;
+        const energy = p.vx*p.vx + p.vy*p.vy;
+        const alpha = Math.min(0.7, 0.15 + energy * 300);
+        ctx.beginPath();
+        ctx.arc(px, py, 0.8, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(0,217,255,${alpha})`;
+        ctx.fill();
+      }
+
+      for (let i = 0; i < neutrals.length; i++) {
+        const p = neutrals[i];
+        p.age++;
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < 0.03) p.vy =  Math.abs(p.vy);
+        if (p.y > 0.97) p.vy = -Math.abs(p.vy);
+        if (p.x > 1.05 || p.age > p.life) { Object.assign(p, mkNeutral()); }
+
+        const px = p.x * W, py = p.y * H;
+        ctx.beginPath();
+        ctx.arc(px, py, 0.9, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(180,200,220,0.18)';
+        ctx.fill();
+      }
+
+      /* Anode label */
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.font = '9px "Share Tech Mono", monospace';
+      ctx.fillStyle = '#ffaa00';
+      ctx.fillText('ANODE', 4, H * 0.5 - 6);
+      ctx.fillText('+', 4, H * 0.5 + 8);
+      ctx.fillStyle = '#00d9ff';
+      ctx.fillText('EXIT', W - 34, H * 0.5 - 6);
+      ctx.fillText('PLANE', W - 42, H * 0.5 + 8);
+      ctx.restore();
+
+      /* Ionization glow — fluctuating near peak-B zone */
+      const glowAlpha = 0.04 + 0.025 * Math.sin(t * 0.07);
+      const grd = ctx.createRadialGradient(W*0.62, H*0.5, 0, W*0.62, H*0.5, H*0.38);
+      grd.addColorStop(0,   `rgba(0,217,255,${glowAlpha})`);
+      grd.addColorStop(0.5, `rgba(0,80,180,${glowAlpha*0.5})`);
+      grd.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, W, H);
+
+      requestAnimationFrame(step);
+    }
+
+    step();
+  })();
+
+  /* ── Scroll-reveal ── */
   const observer = new IntersectionObserver(entries => {
     entries.forEach(e => {
       if (e.isIntersecting) { e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; }
