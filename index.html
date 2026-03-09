@@ -735,7 +735,7 @@
 
   const N_IONS     = 280;
   const N_CHANNELS = 8;
-  const CHAN_HW    = 0.20;  /* half-width of each channel opening (radians) */
+  const CHAN_HW    = 0.20;
 
   const CHAN_ANGLES = Array.from({length: N_CHANNELS}, (_, i) => i * Math.PI * 2 / N_CHANNELS);
 
@@ -744,7 +744,6 @@
     return { cx: W/2, cy: H/2, R: m*0.44, gridR: m*0.18 };
   }
 
-  /* Is this angle aligned with a channel gap in the inner grid? */
   function inChannel(theta) {
     const t = ((theta % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
     for (const a of CHAN_ANGLES) {
@@ -754,19 +753,16 @@
     return false;
   }
 
-  /* Spawn throughout the entire chamber — ions begin at rest and fall inward */
   function mkIon(W, H) {
     const { R, gridR } = geom(W, H);
-    /* Uniform random spawn over the full chamber disk area (area-weighted) */
     const r     = Math.sqrt(Math.random()) * R * 0.92;
     const theta = Math.random() * Math.PI * 2;
-    /* Start near-stationary; the electric field accelerates them inward */
     return {
       r,
       theta,
-      vr:     -(Math.random() * 0.08),   /* tiny initial inward nudge */
+      vr:     -(Math.random() * 0.08),
       vtheta: (Math.random() - 0.5) * 0.003,
-      age:    Math.floor(Math.random() * 300), /* stagger so it looks natural at t=0 */
+      age:    Math.floor(Math.random() * 300),
       life:   300 + Math.random() * 600,
     };
   }
@@ -784,7 +780,6 @@
     const { cx, cy, R, gridR } = geom(W, H);
     t++;
 
-    /* Background */
     ctx.fillStyle = '#060008';
     ctx.fillRect(0, 0, W, H);
 
@@ -796,7 +791,7 @@
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.stroke();
     ctx.restore();
 
-    /* Outer wall glow discharge */
+    /* Wall glow discharge */
     const wallGlow = ctx.createRadialGradient(cx, cy, R*0.82, cx, cy, R*1.02);
     wallGlow.addColorStop(0,   'rgba(0,0,0,0)');
     wallGlow.addColorStop(0.5, `rgba(80,20,160,${0.04+0.02*Math.sin(t*0.03)})`);
@@ -818,10 +813,7 @@
     }
     ctx.restore();
 
-    /* ---- Inner cathode grid ----
-       Draw arc segments between the channel openings.
-       FIX: when the wrapped a1 < a0, add 2π so ctx.arc receives a
-       valid counter-clockwise span that crosses the 0/2π boundary.   */
+    /* Inner cathode grid — wraparound-safe arc segments */
     ctx.save();
     ctx.lineWidth   = 1.8;
     ctx.strokeStyle = `rgba(255,110,35,${0.55+0.2*Math.sin(t*0.04)})`;
@@ -830,7 +822,7 @@
     for (let i = 0; i < N_CHANNELS; i++) {
       const a0 = CHAN_ANGLES[i] + CHAN_HW;
       let   a1 = CHAN_ANGLES[(i + 1) % N_CHANNELS] - CHAN_HW;
-      if (a1 <= a0) a1 += Math.PI * 2;   /* wrap-around correction */
+      if (a1 <= a0) a1 += Math.PI * 2;
       ctx.beginPath();
       ctx.arc(cx, cy, gridR, a0, a1);
       ctx.stroke();
@@ -872,38 +864,29 @@
       const p = ions[i];
       p.age++;
 
-      /* Coulomb-like inward acceleration everywhere outside the grid,
-         reversal / oscillation inside */
       if (p.r > gridR) {
-        /* Outside grid: 1/r² inward pull toward the negative cathode */
         p.vr += -4.5 / (p.r * 0.12 + 1.2);
       } else {
-        /* Inside grid: still net-inward until very small r, then bounce */
         p.vr += (p.r < 3) ? 0.12 : -3.8 / (p.r + 0.8);
       }
 
-      /* Thermal azimuthal jitter */
       p.vtheta += (Math.random() - 0.5) * 0.0005;
       p.vtheta *= 0.997;
-
       p.r     += p.vr;
       p.theta += p.vtheta;
 
-      /* Wall: inelastic bounce, pulled back inward */
       if (p.r >= R * 0.95) {
         p.vr     = -Math.abs(p.vr) * 0.65;
         p.r      =  R * 0.94;
         p.vtheta += (Math.random() - 0.5) * 0.02;
       }
 
-      /* Grid wire collision: elastic outward scatter */
       if (Math.abs(p.r - gridR) < 4 && !inChannel(p.theta)) {
         p.vr     =  Math.abs(p.vr) * 0.55;
         p.r      =  gridR + 5;
         p.vtheta += (Math.random() - 0.5) * 0.06;
       }
 
-      /* Center bounce + stochastic collision flash */
       if (p.r < 2) {
         p.vr = Math.abs(p.vr) * 0.88;
         p.r  = 2;
@@ -918,28 +901,49 @@
 
       if (p.age > p.life) { Object.assign(p, mkIon(W, H)); continue; }
 
-      /* Draw ion */
       const px  = cx + p.r * Math.cos(p.theta);
       const py  = cy + p.r * Math.sin(p.theta);
       const spd = Math.abs(p.vr);
-      const brt = 1 - Math.min(1, p.r / R);
+
+      /* ── Luminosity mapping ──────────────────────────────────────────────
+         brt  = normalised distance-from-wall in [0,1]:  0 = at wall, 1 = at center
+         logL = log10(1 + 9·brt) maps [0,1]→[0,1] with a steep early rise,
+                so even wall-adjacent particles get a meaningful alpha floor.
+
+         Outside grid:
+           alpha = 0.28 + logL × 0.58    →  wall ≈ 0.28,  mid ≈ 0.69,  grid edge ≈ 0.83
+           radius: 1.8 px (was 1.1)
+           soft purple shadow blur to help thin particles register on dark bg
+
+         Inside grid (slow): unchanged bright path, slightly bigger dot
+         Inside grid (fast): unchanged white-hot path
+      ──────────────────────────────────────────────────────────────────── */
+      const brt  = 1 - Math.min(1, p.r / R);
+      const logL = Math.log10(1 + 9 * brt);  /* log₁₀ luminosity weight */
 
       if (p.r < gridR) {
-        /* Inside grid: brighter, faster ions glow white */
         if (spd > 0.6) {
+          /* Fast-convergent: white-hot core glow */
           ctx.save();
-          ctx.shadowColor = '#dd88ff'; ctx.shadowBlur = 5;
-          ctx.beginPath(); ctx.arc(px, py, 1.0, 0, Math.PI*2);
-          ctx.fillStyle = 'rgba(255,230,255,0.80)'; ctx.fill();
+          ctx.shadowColor = '#dd88ff'; ctx.shadowBlur = 6;
+          ctx.beginPath(); ctx.arc(px, py, 1.2, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(255,235,255,0.88)'; ctx.fill();
           ctx.restore();
         } else {
-          ctx.beginPath(); ctx.arc(px, py, 1.3, 0, Math.PI*2);
-          ctx.fillStyle = `rgba(210,140,255,${0.55+brt*0.40})`; ctx.fill();
+          /* Slower inner-grid ions: bright purple */
+          const a = Math.min(0.95, 0.60 + brt * 0.35);
+          ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI*2);
+          ctx.fillStyle = `rgba(215,145,255,${a})`; ctx.fill();
         }
       } else {
-        /* Outside grid: dimmer, fading toward wall */
-        ctx.beginPath(); ctx.arc(px, py, 1.1, 0, Math.PI*2);
-        ctx.fillStyle = `rgba(150,70,240,${0.10+brt*0.36})`; ctx.fill();
+        /* ── Outer region: log-weighted luminosity ── */
+        const alpha = 0.28 + logL * 0.58;
+        ctx.save();
+        ctx.shadowColor = 'rgba(160,60,255,0.5)';
+        ctx.shadowBlur  = 4;
+        ctx.beginPath(); ctx.arc(px, py, 1.8, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(160,75,245,${alpha})`; ctx.fill();
+        ctx.restore();
       }
     }
 
