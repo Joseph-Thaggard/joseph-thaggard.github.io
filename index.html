@@ -726,7 +726,6 @@
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  /* Resize to container */
   function resize() {
     canvas.width  = canvas.offsetWidth  || 480;
     canvas.height = canvas.offsetHeight || 480;
@@ -734,24 +733,18 @@
   resize();
   window.addEventListener('resize', () => { resize(); init(); });
 
-  /* ── Geometry ── */
-  const N_IONS     = 260;    /* deuterium ions */
-  const N_CHANNELS = 8;      /* star mode openings through inner grid */
-  const CHAN_HW    = 0.20;   /* half-width of each channel (radians) */
+  const N_IONS     = 280;
+  const N_CHANNELS = 8;
+  const CHAN_HW    = 0.20;  /* half-width of each channel opening (radians) */
 
   const CHAN_ANGLES = Array.from({length: N_CHANNELS}, (_, i) => i * Math.PI * 2 / N_CHANNELS);
 
   function geom(W, H) {
     const m = Math.min(W, H);
-    return {
-      cx: W / 2,
-      cy: H / 2,
-      R:     m * 0.44,   /* outer chamber radius */
-      gridR: m * 0.18,   /* inner cathode grid radius */
-    };
+    return { cx: W/2, cy: H/2, R: m*0.44, gridR: m*0.18 };
   }
 
-  /* Is angle within a grid channel opening? */
+  /* Is this angle aligned with a channel gap in the inner grid? */
   function inChannel(theta) {
     const t = ((theta % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
     for (const a of CHAN_ANGLES) {
@@ -761,26 +754,24 @@
     return false;
   }
 
-  /* ── Particle factory ── */
+  /* Spawn throughout the entire chamber — ions begin at rest and fall inward */
   function mkIon(W, H) {
     const { R, gridR } = geom(W, H);
-    /* Spawn randomly between inner grid and chamber wall */
-    const r     = gridR * 1.4 + Math.random() * (R * 0.85 - gridR * 1.4);
+    /* Uniform random spawn over the full chamber disk area (area-weighted) */
+    const r     = Math.sqrt(Math.random()) * R * 0.92;
     const theta = Math.random() * Math.PI * 2;
-    /* Initial radial velocity: inward, varies so they arrive at different times */
-    const vr    = -(0.25 + Math.random() * 0.55);
+    /* Start near-stationary; the electric field accelerates them inward */
     return {
-      r, theta,
-      vr,
-      vtheta: (Math.random() - 0.5) * 0.004,
-      age: 0,
-      life: 250 + Math.random() * 500,
+      r,
+      theta,
+      vr:     -(Math.random() * 0.08),   /* tiny initial inward nudge */
+      vtheta: (Math.random() - 0.5) * 0.003,
+      age:    Math.floor(Math.random() * 300), /* stagger so it looks natural at t=0 */
+      life:   300 + Math.random() * 600,
     };
   }
 
-  /* ── Flash events (collision / scatter) ── */
   const flashes = [];
-
   let ions = [], t = 0;
 
   function init() {
@@ -788,35 +779,32 @@
     ions = Array.from({length: N_IONS}, () => mkIon(W, H));
   }
 
-  /* ── Main loop ── */
   function step() {
     const W = canvas.width, H = canvas.height;
     const { cx, cy, R, gridR } = geom(W, H);
     t++;
 
-    /* ---- Background ---- */
+    /* Background */
     ctx.fillStyle = '#060008';
     ctx.fillRect(0, 0, W, H);
 
-    /* ---- Outer chamber ring ---- */
+    /* Outer chamber ring */
     ctx.save();
     ctx.globalAlpha = 0.35;
     ctx.strokeStyle = '#2a3545';
     ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, Math.PI*2);
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.stroke();
     ctx.restore();
 
-    /* ---- Outer glow discharge (wall plasma) ---- */
+    /* Outer wall glow discharge */
     const wallGlow = ctx.createRadialGradient(cx, cy, R*0.82, cx, cy, R*1.02);
-    wallGlow.addColorStop(0, 'rgba(0,0,0,0)');
-    wallGlow.addColorStop(0.5, `rgba(80,20,160,${0.04 + 0.02*Math.sin(t*0.03)})`);
-    wallGlow.addColorStop(1,  `rgba(130,50,210,${0.06 + 0.03*Math.sin(t*0.05+1)})`);
+    wallGlow.addColorStop(0,   'rgba(0,0,0,0)');
+    wallGlow.addColorStop(0.5, `rgba(80,20,160,${0.04+0.02*Math.sin(t*0.03)})`);
+    wallGlow.addColorStop(1,   `rgba(130,50,210,${0.06+0.03*Math.sin(t*0.05+1)})`);
     ctx.fillStyle = wallGlow;
     ctx.beginPath(); ctx.arc(cx, cy, R*1.02, 0, Math.PI*2); ctx.fill();
 
-    /* ---- Faint radial electric field lines ---- */
+    /* Faint radial E-field lines */
     ctx.save();
     ctx.globalAlpha = 0.03;
     ctx.strokeStyle = '#aa44ff';
@@ -824,179 +812,150 @@
     for (let i = 0; i < 24; i++) {
       const ang = i * Math.PI / 12;
       ctx.beginPath();
-      ctx.moveTo(cx + gridR * Math.cos(ang), cy + gridR * Math.sin(ang));
-      ctx.lineTo(cx + R * Math.cos(ang),     cy + R * Math.sin(ang));
+      ctx.moveTo(cx + gridR*Math.cos(ang), cy + gridR*Math.sin(ang));
+      ctx.lineTo(cx + R*Math.cos(ang),     cy + R*Math.sin(ang));
       ctx.stroke();
     }
     ctx.restore();
 
-    /* ---- Inner cathode grid segments ---- */
+    /* ---- Inner cathode grid ----
+       Draw arc segments between the channel openings.
+       FIX: when the wrapped a1 < a0, add 2π so ctx.arc receives a
+       valid counter-clockwise span that crosses the 0/2π boundary.   */
     ctx.save();
-    ctx.lineWidth = 1.8;
-    const gridBright = 0.55 + 0.2 * Math.sin(t * 0.04);
-    ctx.strokeStyle = `rgba(255, 110, 35, ${gridBright})`;
-    ctx.shadowColor  = '#ff8822';
-    ctx.shadowBlur   = 10;
+    ctx.lineWidth   = 1.8;
+    ctx.strokeStyle = `rgba(255,110,35,${0.55+0.2*Math.sin(t*0.04)})`;
+    ctx.shadowColor = '#ff8822';
+    ctx.shadowBlur  = 10;
     for (let i = 0; i < N_CHANNELS; i++) {
-      /* Wire segment between adjacent channel gaps */
       const a0 = CHAN_ANGLES[i] + CHAN_HW;
-      const a1 = CHAN_ANGLES[(i+1) % N_CHANNELS] - CHAN_HW;
-      if (a1 > a0) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, gridR, a0, a1);
-        ctx.stroke();
-      }
+      let   a1 = CHAN_ANGLES[(i + 1) % N_CHANNELS] - CHAN_HW;
+      if (a1 <= a0) a1 += Math.PI * 2;   /* wrap-around correction */
+      ctx.beginPath();
+      ctx.arc(cx, cy, gridR, a0, a1);
+      ctx.stroke();
     }
     ctx.restore();
 
-    /* ---- Star mode beams (along channel axes) ---- */
-    for (let i = 0; i < CHAN_ANGLES.length; i++) {
-      const ang  = CHAN_ANGLES[i];
-      const pulse = 0.055 + 0.025 * Math.sin(t * 0.05 + ang * 2.3);
-      const grad = ctx.createLinearGradient(
-        cx, cy,
-        cx + R * Math.cos(ang), cy + R * Math.sin(ang)
-      );
+    /* Star-mode beam rays */
+    for (let i = 0; i < N_CHANNELS; i++) {
+      const ang   = CHAN_ANGLES[i];
+      const pulse = 0.055 + 0.025*Math.sin(t*0.05 + ang*2.3);
+      const grad  = ctx.createLinearGradient(cx, cy, cx+R*Math.cos(ang), cy+R*Math.sin(ang));
       grad.addColorStop(0,    `rgba(255,240,255,${pulse*2.5})`);
       grad.addColorStop(0.12, `rgba(210,120,255,${pulse*1.8})`);
       grad.addColorStop(0.45, `rgba(140,45,230,${pulse})`);
       grad.addColorStop(1,    'rgba(0,0,0,0)');
       ctx.save();
       ctx.strokeStyle = grad;
-      ctx.lineWidth   = 2.5 + 1.5 * Math.sin(t * 0.06 + i);
+      ctx.lineWidth   = 2.5 + 1.5*Math.sin(t*0.06 + i);
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + R * Math.cos(ang), cy + R * Math.sin(ang));
+      ctx.lineTo(cx + R*Math.cos(ang), cy + R*Math.sin(ang));
       ctx.stroke();
       ctx.restore();
     }
 
-    /* ---- Central poissor (convergence glow) ---- */
-    const poissorPulse = 0.7 + 0.25 * Math.sin(t * 0.09);
-    const pg = ctx.createRadialGradient(cx, cy, 0, cx, cy, gridR * 1.15);
-    pg.addColorStop(0,    `rgba(255,255,255,${0.10*poissorPulse})`);
-    pg.addColorStop(0.10, `rgba(240,180,255,${0.18*poissorPulse})`);
-    pg.addColorStop(0.35, `rgba(170,60,240,${0.10*poissorPulse})`);
-    pg.addColorStop(0.70, `rgba(90,10,160,${0.05*poissorPulse})`);
+    /* Central poissor glow */
+    const pp = 0.7 + 0.25*Math.sin(t*0.09);
+    const pg = ctx.createRadialGradient(cx, cy, 0, cx, cy, gridR*1.15);
+    pg.addColorStop(0,    `rgba(255,255,255,${0.10*pp})`);
+    pg.addColorStop(0.10, `rgba(240,180,255,${0.18*pp})`);
+    pg.addColorStop(0.35, `rgba(170,60,240,${0.10*pp})`);
+    pg.addColorStop(0.70, `rgba(90,10,160,${0.05*pp})`);
     pg.addColorStop(1,    'rgba(0,0,0,0)');
     ctx.fillStyle = pg;
-    ctx.beginPath(); ctx.arc(cx, cy, gridR * 1.15, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, gridR*1.15, 0, Math.PI*2); ctx.fill();
 
     /* ---- Update & draw ions ---- */
     for (let i = 0; i < ions.length; i++) {
       const p = ions[i];
       p.age++;
 
-      /* ── Radial electric force ──
-         Outside inner grid: strong inward pull (1/r² like)
-         Inside inner grid:  inward toward center until very small r, then
-                             centrifugal-like bounce for oscillation */
+      /* Coulomb-like inward acceleration everywhere outside the grid,
+         reversal / oscillation inside */
       if (p.r > gridR) {
-        /* Outer region: strong inward acceleration */
+        /* Outside grid: 1/r² inward pull toward the negative cathode */
         p.vr += -4.5 / (p.r * 0.12 + 1.2);
       } else {
-        /* Inner region: weaker inward, reversal as they pass through center */
+        /* Inside grid: still net-inward until very small r, then bounce */
         p.vr += (p.r < 3) ? 0.12 : -3.8 / (p.r + 0.8);
       }
 
-      /* Tiny azimuthal thermal jitter */
+      /* Thermal azimuthal jitter */
       p.vtheta += (Math.random() - 0.5) * 0.0005;
       p.vtheta *= 0.997;
 
       p.r     += p.vr;
       p.theta += p.vtheta;
 
-      /* ── Wall reflection: inelastic, pulls ion back ── */
+      /* Wall: inelastic bounce, pulled back inward */
       if (p.r >= R * 0.95) {
-        p.vr  = -Math.abs(p.vr) * 0.65;
-        p.r   = R * 0.94;
-        /* azimuthal scatter on wall bounce */
+        p.vr     = -Math.abs(p.vr) * 0.65;
+        p.r      =  R * 0.94;
         p.vtheta += (Math.random() - 0.5) * 0.02;
       }
 
-      /* ── Grid wire collision ── */
-      const nearGrid = Math.abs(p.r - gridR) < 4;
-      if (nearGrid && !inChannel(p.theta)) {
-        /* Hit wire: elastic scatter back outward */
-        p.vr = Math.abs(p.vr) * 0.55;
-        p.r  = gridR + 5;
-        /* scatter azimuthally — realistic grid bounce */
+      /* Grid wire collision: elastic outward scatter */
+      if (Math.abs(p.r - gridR) < 4 && !inChannel(p.theta)) {
+        p.vr     =  Math.abs(p.vr) * 0.55;
+        p.r      =  gridR + 5;
         p.vtheta += (Math.random() - 0.5) * 0.06;
       }
 
-      /* ── Center bounce + collision flash ── */
+      /* Center bounce + stochastic collision flash */
       if (p.r < 2) {
         p.vr = Math.abs(p.vr) * 0.88;
         p.r  = 2;
-        /* stochastic fusion/scatter flash */
         if (Math.random() < 0.12) {
           flashes.push({
-            x: cx + (Math.random() - 0.5) * 10,
-            y: cy + (Math.random() - 0.5) * 10,
-            age: 0,
-            life: 14 + Math.random() * 18,
+            x: cx + (Math.random()-0.5)*10,
+            y: cy + (Math.random()-0.5)*10,
+            age: 0, life: 14 + Math.random()*18,
           });
         }
       }
 
-      /* ── Age out ── */
-      if (p.age > p.life) Object.assign(p, mkIon(W, H));
+      if (p.age > p.life) { Object.assign(p, mkIon(W, H)); continue; }
 
-      /* ── Draw ion ── */
-      const px = cx + p.r * Math.cos(p.theta);
-      const py = cy + p.r * Math.sin(p.theta);
+      /* Draw ion */
+      const px  = cx + p.r * Math.cos(p.theta);
+      const py  = cy + p.r * Math.sin(p.theta);
+      const spd = Math.abs(p.vr);
+      const brt = 1 - Math.min(1, p.r / R);
 
-      const insideGrid = p.r < gridR;
-      const brightness  = 1 - Math.min(1, p.r / R);
-      const speed       = Math.abs(p.vr);
-
-      if (insideGrid) {
-        /* Brighter, more white-purple near center */
-        const alpha = 0.55 + brightness * 0.40;
-        /* Glow for fast converging ions */
-        if (speed > 0.6) {
+      if (p.r < gridR) {
+        /* Inside grid: brighter, faster ions glow white */
+        if (spd > 0.6) {
           ctx.save();
-          ctx.shadowColor = '#dd88ff';
-          ctx.shadowBlur  = 5;
+          ctx.shadowColor = '#dd88ff'; ctx.shadowBlur = 5;
           ctx.beginPath(); ctx.arc(px, py, 1.0, 0, Math.PI*2);
-          ctx.fillStyle = `rgba(255,230,255,0.80)`;
-          ctx.fill();
+          ctx.fillStyle = 'rgba(255,230,255,0.80)'; ctx.fill();
           ctx.restore();
         } else {
           ctx.beginPath(); ctx.arc(px, py, 1.3, 0, Math.PI*2);
-          ctx.fillStyle = `rgba(210,140,255,${alpha})`;
-          ctx.fill();
+          ctx.fillStyle = `rgba(210,140,255,${0.55+brt*0.40})`; ctx.fill();
         }
       } else {
-        /* Outer region: dimmer purple */
-        const alpha = 0.12 + brightness * 0.38;
+        /* Outside grid: dimmer, fading toward wall */
         ctx.beginPath(); ctx.arc(px, py, 1.1, 0, Math.PI*2);
-        ctx.fillStyle = `rgba(150,70,240,${alpha})`;
-        ctx.fill();
+        ctx.fillStyle = `rgba(150,70,240,${0.10+brt*0.36})`; ctx.fill();
       }
     }
 
-    /* ---- Collision / scatter flashes ---- */
+    /* Collision / scatter flashes */
     for (let i = flashes.length - 1; i >= 0; i--) {
-      const f = flashes[i];
+      const f   = flashes[i];
       f.age++;
       if (f.age > f.life) { flashes.splice(i, 1); continue; }
-
-      const prog  = f.age / f.life;
-      const inv   = 1 - prog;
-      const rad   = 1.5 + prog * 22;
-
-      /* White-hot core */
-      ctx.beginPath();
-      ctx.arc(f.x, f.y, rad * 0.25, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(255,255,255,${inv * 0.95})`;
-      ctx.fill();
-
-      /* Purple expanding ring */
+      const inv = 1 - f.age / f.life;
+      const rad = 1.5 + (f.age / f.life) * 22;
+      ctx.beginPath(); ctx.arc(f.x, f.y, rad*0.25, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${inv*0.95})`; ctx.fill();
       const fg = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, rad);
-      fg.addColorStop(0,   `rgba(255,210,255,${inv * 0.75})`);
-      fg.addColorStop(0.3, `rgba(200,80,255,${inv * 0.45})`);
-      fg.addColorStop(0.7, `rgba(120,0,200,${inv * 0.15})`);
+      fg.addColorStop(0,   `rgba(255,210,255,${inv*0.75})`);
+      fg.addColorStop(0.3, `rgba(200,80,255,${inv*0.45})`);
+      fg.addColorStop(0.7, `rgba(120,0,200,${inv*0.15})`);
       fg.addColorStop(1,   'rgba(0,0,0,0)');
       ctx.fillStyle = fg;
       ctx.beginPath(); ctx.arc(f.x, f.y, rad, 0, Math.PI*2); ctx.fill();
@@ -1013,14 +972,14 @@
 const observer = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (e.isIntersecting) {
-      e.target.style.opacity    = '1';
-      e.target.style.transform  = 'translateY(0)';
+      e.target.style.opacity   = '1';
+      e.target.style.transform = 'translateY(0)';
     }
   });
 }, { threshold: 0.1 });
 document.querySelectorAll('.project-card,.pub-item,.skill-group').forEach(el => {
-  el.style.opacity   = '0';
-  el.style.transform = 'translateY(20px)';
+  el.style.opacity    = '0';
+  el.style.transform  = 'translateY(20px)';
   el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
   observer.observe(el);
 });
