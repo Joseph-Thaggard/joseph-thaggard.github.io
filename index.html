@@ -223,6 +223,8 @@
     }
     .pub-year { font-family: var(--mono); font-size: 13px; color: var(--amber); letter-spacing: 0.05em; padding-top: 3px; }
     .pub-title { font-family: var(--display); font-weight: 600; font-size: 18px; color: #fff; margin-bottom: 6px; line-height: 1.3; }
+    .pub-title a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(0,217,255,0.3); transition: border-color 0.2s, color 0.2s; }
+    .pub-title a:hover { color: var(--cyan); border-color: var(--cyan); }
     .pub-venue { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
     .pub-badge {
       display: inline-block; margin-left: 12px;
@@ -375,7 +377,7 @@
       <div class="about-grid">
         <div class="about-text">
           <p>
-            I'm a <strong>Junior Aerospace Engineering student at UAH</strong>,
+            I'm a <strong>Senior Aerospace Engineering student at UAH</strong>,
             embedded in the Charger Advanced Power and Propulsion (CAPP) Lab since January 2023.
             My work sits at the intersection of plasma physics, electric propulsion, and the
             numerical simulations that make advanced concepts tractable.
@@ -553,7 +555,7 @@
             Co-founded in September 2025 with students from UAH, Arizona State University,
             and the University of Southampton. Now a worldwide network with members from 19+
             universities — Purdue, Michigan, Cranfield, Cal Poly Pomona, Mumbai, Temple, and more.
-            Hosts monthly talks from experts including Dr. Dan Goebel (NAE) and Steve Snyder.
+            Hosts monthly talks from experts including Dr. Dan Goebel and Steve Snyder.
           </div>
           <div class="card-chips">
             <span class="chip">Co-Founder</span>
@@ -596,7 +598,7 @@
           <div class="pub-year">2026</div>
           <div>
             <div class="pub-title">
-              Design and Simulation of a Student 1.35 kW Magnetically Shielded Hall-Effect Thruster
+              <a href="https://doi.org/10.2514/6.2026-1533" target="_blank" rel="noopener">Design and Simulation of a Student 1.35 kW Magnetically Shielded Hall-Effect Thruster</a>
               <span class="pub-badge">Published</span>
             </div>
             <div class="pub-venue">AIAA SciTech Forum · January 12–16, 2026 · Orlando, FL</div>
@@ -783,7 +785,6 @@
     ctx.fillStyle = '#060008';
     ctx.fillRect(0, 0, W, H);
 
-    /* Outer chamber ring */
     ctx.save();
     ctx.globalAlpha = 0.35;
     ctx.strokeStyle = '#2a3545';
@@ -791,7 +792,6 @@
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.stroke();
     ctx.restore();
 
-    /* Wall glow discharge */
     const wallGlow = ctx.createRadialGradient(cx, cy, R*0.82, cx, cy, R*1.02);
     wallGlow.addColorStop(0,   'rgba(0,0,0,0)');
     wallGlow.addColorStop(0.5, `rgba(80,20,160,${0.04+0.02*Math.sin(t*0.03)})`);
@@ -799,7 +799,6 @@
     ctx.fillStyle = wallGlow;
     ctx.beginPath(); ctx.arc(cx, cy, R*1.02, 0, Math.PI*2); ctx.fill();
 
-    /* Faint radial E-field lines */
     ctx.save();
     ctx.globalAlpha = 0.03;
     ctx.strokeStyle = '#aa44ff';
@@ -813,7 +812,6 @@
     }
     ctx.restore();
 
-    /* Inner cathode grid — wraparound-safe arc segments */
     ctx.save();
     ctx.lineWidth   = 1.8;
     ctx.strokeStyle = `rgba(255,110,35,${0.55+0.2*Math.sin(t*0.04)})`;
@@ -829,7 +827,6 @@
     }
     ctx.restore();
 
-    /* Star-mode beam rays */
     for (let i = 0; i < N_CHANNELS; i++) {
       const ang   = CHAN_ANGLES[i];
       const pulse = 0.055 + 0.025*Math.sin(t*0.05 + ang*2.3);
@@ -848,7 +845,6 @@
       ctx.restore();
     }
 
-    /* Central poissor glow */
     const pp = 0.7 + 0.25*Math.sin(t*0.09);
     const pg = ctx.createRadialGradient(cx, cy, 0, cx, cy, gridR*1.15);
     pg.addColorStop(0,    `rgba(255,255,255,${0.10*pp})`);
@@ -859,7 +855,6 @@
     ctx.fillStyle = pg;
     ctx.beginPath(); ctx.arc(cx, cy, gridR*1.15, 0, Math.PI*2); ctx.fill();
 
-    /* ---- Update & draw ions ---- */
     for (let i = 0; i < ions.length; i++) {
       const p = ions[i];
       p.age++;
@@ -904,39 +899,22 @@
       const px  = cx + p.r * Math.cos(p.theta);
       const py  = cy + p.r * Math.sin(p.theta);
       const spd = Math.abs(p.vr);
-
-      /* ── Luminosity mapping ──────────────────────────────────────────────
-         brt  = normalised distance-from-wall in [0,1]:  0 = at wall, 1 = at center
-         logL = log10(1 + 9·brt) maps [0,1]→[0,1] with a steep early rise,
-                so even wall-adjacent particles get a meaningful alpha floor.
-
-         Outside grid:
-           alpha = 0.28 + logL × 0.58    →  wall ≈ 0.28,  mid ≈ 0.69,  grid edge ≈ 0.83
-           radius: 1.8 px (was 1.1)
-           soft purple shadow blur to help thin particles register on dark bg
-
-         Inside grid (slow): unchanged bright path, slightly bigger dot
-         Inside grid (fast): unchanged white-hot path
-      ──────────────────────────────────────────────────────────────────── */
       const brt  = 1 - Math.min(1, p.r / R);
-      const logL = Math.log10(1 + 9 * brt);  /* log₁₀ luminosity weight */
+      const logL = Math.log10(1 + 9 * brt);
 
       if (p.r < gridR) {
         if (spd > 0.6) {
-          /* Fast-convergent: white-hot core glow */
           ctx.save();
           ctx.shadowColor = '#dd88ff'; ctx.shadowBlur = 6;
           ctx.beginPath(); ctx.arc(px, py, 1.2, 0, Math.PI*2);
           ctx.fillStyle = 'rgba(255,235,255,0.88)'; ctx.fill();
           ctx.restore();
         } else {
-          /* Slower inner-grid ions: bright purple */
           const a = Math.min(0.95, 0.60 + brt * 0.35);
           ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI*2);
           ctx.fillStyle = `rgba(215,145,255,${a})`; ctx.fill();
         }
       } else {
-        /* ── Outer region: log-weighted luminosity ── */
         const alpha = 0.28 + logL * 0.58;
         ctx.save();
         ctx.shadowColor = 'rgba(160,60,255,0.5)';
@@ -947,7 +925,6 @@
       }
     }
 
-    /* Collision / scatter flashes */
     for (let i = flashes.length - 1; i >= 0; i--) {
       const f   = flashes[i];
       f.age++;
