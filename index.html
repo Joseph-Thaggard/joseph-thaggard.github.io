@@ -393,7 +393,6 @@
       color: var(--purple);
       box-shadow: 0 0 12px rgba(204,102,255,0.35);
     }
-    #audio-btn title { display: none; }
 
     @media (max-width: 768px) {
       .hero-grid, .about-grid, .contact-inner { grid-template-columns: 1fr; }
@@ -463,10 +462,6 @@
     <div class="activity-inner">
       <span class="activity-label">Live GitHub Activity</span>
       <div class="activity-stats">
-        <div class="act-stat">
-          <span class="act-val" id="stat-commits">—</span>
-          <span class="act-lbl">Commits (90 days)</span>
-        </div>
         <div class="act-stat">
           <span class="act-val purple" id="stat-repos">—</span>
           <span class="act-lbl">Public Repos</span>
@@ -844,10 +839,9 @@
 /* ── Live GitHub Activity ── */
 (function() {
   const USER = 'Joseph-Thaggard';
-  const CUTOFF = Date.now() - 90 * 24 * 60 * 60 * 1000; /* 90 days ago */
+  const CUTOFF = Date.now() - 90 * 24 * 60 * 60 * 1000;
 
-  async function animateVal(el, target, color) {
-    /* Count-up animation */
+  async function animateVal(el, target) {
     if (typeof target === 'string') { el.textContent = target; return; }
     const duration = 900, steps = 40;
     const step = Math.ceil(target / steps);
@@ -868,7 +862,7 @@
         animateVal(document.getElementById('stat-repos'), userData.public_repos);
 
       /* Events — up to 3 pages (300 events, ~90 days of activity) */
-      let totalCommits = 0, pushEvents = 0, lastPushDate = null;
+      let pushEvents = 0, lastPushDate = null;
       for (let page = 1; page <= 3; page++) {
         const evRes = await fetch(
           `https://api.github.com/users/${USER}/events?per_page=100&page=${page}`
@@ -883,14 +877,12 @@
           if (ts < CUTOFF) { hitCutoff = true; break; }
           if (ev.type === 'PushEvent') {
             pushEvents++;
-            totalCommits += (ev.payload.commits || []).length;
             if (!lastPushDate) lastPushDate = ev.created_at;
           }
         }
         if (hitCutoff) break;
       }
 
-      animateVal(document.getElementById('stat-commits'), totalCommits);
       animateVal(document.getElementById('stat-push-events'), pushEvents);
 
       if (lastPushDate) {
@@ -956,7 +948,6 @@
     };
   }
 
-  /* Exposed so the audio layer can listen for collision events */
   window._fusorFlashes = [];
   const flashes = window._fusorFlashes;
 
@@ -1080,7 +1071,6 @@
             x: cx + (Math.random()-0.5)*10,
             y: cy + (Math.random()-0.5)*10,
             age: 0, life: 14 + Math.random()*18,
-            /* tag for audio sync */
             freq: 380 + Math.random() * 700,
           });
         }
@@ -1153,92 +1143,65 @@
     masterGain.gain.value = 0.0;
     masterGain.connect(audioCtx.destination);
 
-    /* ── Layer 1: Deep sawtooth discharge hum @ 58 Hz ── */
     const hum = audioCtx.createOscillator();
     hum.type = 'sawtooth';
     hum.frequency.value = 58;
-
-    /* LFO for slow plasma instability drift on hum frequency */
-    const humLFO     = audioCtx.createOscillator();
+    const humLFO = audioCtx.createOscillator();
     const humLFOGain = audioCtx.createGain();
-    humLFO.frequency.value  = 0.07;   /* ~4 sec per cycle */
-    humLFOGain.gain.value   = 3.5;    /* ±3.5 Hz pitch wander */
+    humLFO.frequency.value = 0.07;
+    humLFOGain.gain.value  = 3.5;
     humLFO.connect(humLFOGain);
     humLFOGain.connect(hum.frequency);
-
-    /* Amplitude LFO — slow breathe */
-    const humAmpLFO     = audioCtx.createOscillator();
+    const humAmpLFO = audioCtx.createOscillator();
     const humAmpLFOGain = audioCtx.createGain();
-    const humGain       = audioCtx.createGain();
-    humAmpLFO.frequency.value  = 0.13;
-    humAmpLFOGain.gain.value   = 0.08;
-    humGain.gain.value         = 0.50;
+    const humGain = audioCtx.createGain();
+    humAmpLFO.frequency.value = 0.13;
+    humAmpLFOGain.gain.value  = 0.08;
+    humGain.gain.value        = 0.50;
     humAmpLFO.connect(humAmpLFOGain);
     humAmpLFOGain.connect(humGain.gain);
-
-    /* Low-pass to tame sawtooth harshness */
     const humLP = audioCtx.createBiquadFilter();
     humLP.type = 'lowpass'; humLP.frequency.value = 320; humLP.Q.value = 1.2;
-
     hum.connect(humLP); humLP.connect(humGain); humGain.connect(masterGain);
     hum.start(); humLFO.start(); humAmpLFO.start();
 
-    /* ── Layer 2: Electric overtone @ 234 Hz ── */
-    const elec     = audioCtx.createOscillator();
+    const elec = audioCtx.createOscillator();
     const elecGain = audioCtx.createGain();
-    elec.type           = 'sine';
-    elec.frequency.value = 234;
-    elecGain.gain.value  = 0.07;
-
-    /* Slow AM shimmer on the overtone */
-    const elecLFO     = audioCtx.createOscillator();
+    elec.type = 'sine'; elec.frequency.value = 234; elecGain.gain.value = 0.07;
+    const elecLFO = audioCtx.createOscillator();
     const elecLFOGain = audioCtx.createGain();
-    elecLFO.frequency.value  = 0.31;
-    elecLFOGain.gain.value   = 0.04;
-    elecLFO.connect(elecLFOGain);
-    elecLFOGain.connect(elecGain.gain);
-
+    elecLFO.frequency.value = 0.31; elecLFOGain.gain.value = 0.04;
+    elecLFO.connect(elecLFOGain); elecLFOGain.connect(elecGain.gain);
     elec.connect(elecGain); elecGain.connect(masterGain);
     elec.start(); elecLFO.start();
 
-    /* ── Layer 3: High-voltage buzz harmonic @ 174 Hz ── */
-    const buzz     = audioCtx.createOscillator();
+    const buzz = audioCtx.createOscillator();
     const buzzGain = audioCtx.createGain();
-    buzz.type            = 'square';
-    buzz.frequency.value = 174;
-    buzzGain.gain.value  = 0.025;
-
+    buzz.type = 'square'; buzz.frequency.value = 174; buzzGain.gain.value = 0.025;
     const buzzLP = audioCtx.createBiquadFilter();
     buzzLP.type = 'lowpass'; buzzLP.frequency.value = 500;
     buzz.connect(buzzLP); buzzLP.connect(buzzGain); buzzGain.connect(masterGain);
     buzz.start();
 
-    /* ── Layer 4: Vacuum noise — bandpass filtered white noise ── */
     const SR = audioCtx.sampleRate;
     const noiseBuf  = audioCtx.createBuffer(1, SR * 3, SR);
     const noiseData = noiseBuf.getChannelData(0);
     for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
-
-    const noiseNode  = audioCtx.createBufferSource();
-    noiseNode.buffer = noiseBuf;
-    noiseNode.loop   = true;
-
+    const noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = noiseBuf; noiseNode.loop = true;
     const noiseBP = audioCtx.createBiquadFilter();
     noiseBP.type = 'bandpass'; noiseBP.frequency.value = 900; noiseBP.Q.value = 0.6;
-
     const noiseGain = audioCtx.createGain();
     noiseGain.gain.value = 0.032;
-
     noiseNode.connect(noiseBP); noiseBP.connect(noiseGain); noiseGain.connect(masterGain);
     noiseNode.start();
 
-    /* ── Layer 5: Collision ping tones — synced to simulation flashes ── */
     function spawnPing(freq) {
       if (!running || !audioCtx) return;
-      const now    = audioCtx.currentTime;
-      const osc    = audioCtx.createOscillator();
-      const pGain  = audioCtx.createGain();
-      osc.type     = 'sine';
+      const now   = audioCtx.currentTime;
+      const osc   = audioCtx.createOscillator();
+      const pGain = audioCtx.createGain();
+      osc.type = 'sine';
       osc.frequency.value = freq || (360 + Math.random() * 800);
       pGain.gain.setValueAtTime(0.18, now);
       pGain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
@@ -1246,12 +1209,10 @@
       osc.start(now); osc.stop(now + 1.1);
     }
 
-    /* Poll the simulation flash array and fire pings on new entries */
     function pollFlashes() {
       if (!running) return;
       const flashes = window._fusorFlashes || [];
       if (flashes.length > lastFlashCount) {
-        /* New flashes appeared — fire a ping for each (up to 3 at once) */
         const newCount = Math.min(flashes.length - lastFlashCount, 3);
         for (let i = 0; i < newCount; i++) {
           const f = flashes[flashes.length - 1 - i];
@@ -1264,7 +1225,6 @@
     pollFlashes();
   }
 
-  /* Fade master gain in/out smoothly */
   function fadeGain(target, dur) {
     if (!masterGain) return;
     masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
